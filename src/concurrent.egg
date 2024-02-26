@@ -1,0 +1,5 @@
+
+((author "Massimo Nocentini")
+ (synopsis "A port of ConcurrentML for CHICKEN scheme.")
+ (license "MIT")
+ (components (extension concurrent)))
