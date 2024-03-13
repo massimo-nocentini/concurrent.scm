@@ -85,4 +85,20 @@
                 (else (let1 (msg (fds-queue-car (concurrent-channel-sendQ ch)))
                         (concurrent-channel-sendQ-set! ch (fds-queue-cdr (concurrent-channel-sendQ ch)))
                         msg))))))
+
+    (define-syntax letchannel-async
+      (syntax-rules ()
+        ((_ cos (ch ...) body ...)
+         (let ((ch (concurrent-channel-async cos)) ...)
+           body ...))))
+
+    (define (concurrent-channel-filter chin p?)
+      (let1 (cos (concurrent-channel-cos chin))
+        (letchannel-async cos (chout)
+          (concurrent-system-spawn cos
+            (let loop () 
+              (let1 (msg (concurrent-channel-recv chin))
+                (when (p? msg) (concurrent-channel-send chout msg))
+                (loop))))
+          chout)))    
 )
