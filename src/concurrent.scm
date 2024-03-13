@@ -1,7 +1,7 @@
 
 (module concurrent *
 
-	  (import scheme (chicken base) (chicken condition) (chicken foreign) aux fds-queue)
+	  (import scheme (chicken base) (chicken condition) (chicken foreign) aux fds-queue (chicken pretty-print))
 
     #>
     #include <zmq.h>
@@ -40,7 +40,8 @@
     (define (concurrent-system-spawn! cos thunk)
         (let ((t (letcc j
                     (letcc k (j k))
-                    (with-exception-handler (λ (x) (void)) thunk)
+                    #;(with-exception-handler (λ (x) (pretty-print x)) thunk)
+                    (thunk)
                     (concurrent-system-dispatch! cos))))
             (concurrent-system-rdyQ-enqueue! cos t)))
 
@@ -63,7 +64,16 @@
     
     (define (concurrent-channel-send ch msg)
       (cond
-        ((concurrent-channel-sync? ch) (void))
+        ((concurrent-channel-sync? ch)
+         (letcc k 
+            (cond
+              ((fds-queue-empty? (concurrent-channel-recvQ ch))
+                (concurrent-channel-sendQ-set! ch (fds-queue-cons (cons msg k) (concurrent-channel-sendQ ch)))
+                (concurrent-system-dispatch! (concurrent-channel-cos ch)))
+              (else (let1 (beta (fds-queue-car (concurrent-channel-recvQ ch)))
+                      (concurrent-system-rdyQ-enqueue! (concurrent-channel-cos ch) k)
+                      (concurrent-channel-recvQ-set! ch (fds-queue-cdr (concurrent-channel-recvQ ch)))
+                      (beta msg))))))
         (else (letcc k
                 (concurrent-system-rdyQ-enqueue! (concurrent-channel-cos ch) k)
                 (cond
@@ -76,7 +86,16 @@
 
     (define (concurrent-channel-recv ch)
       (cond
-        ((concurrent-channel-sync? ch) (void))
+        ((concurrent-channel-sync? ch) 
+         (cond
+            ((fds-queue-empty? (concurrent-channel-sendQ ch))
+               (letcc k
+                  (concurrent-system-rdyQ-enqueue! (concurrent-channel-cos ch) k)
+                  (concurrent-system-dispatch! (concurrent-channel-cos ch))))
+            (else (let1 (pair (fds-queue-car (concurrent-channel-sendQ ch)))
+                    (concurrent-channel-sendQ-set! ch (fds-queue-cdr (concurrent-channel-sendQ ch)))
+                    (concurrent-system-rdyQ-enqueue! (concurrent-channel-cos ch) (cdr pair))
+                    (car pair)))))
         (else (cond
                 ((fds-queue-empty? (concurrent-channel-sendQ ch))
                    (letcc k 

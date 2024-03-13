@@ -1,5 +1,5 @@
 
-(import scheme (chicken base) aux unittest concurrent)
+(import scheme (chicken base) aux unittest concurrent (chicken pretty-print))
 
 (define (ℕ-channel cos j)
   (letchannel-async cos (ch)
@@ -37,11 +37,15 @@
 
   ((test-primes-channel _)
       (let* ((cos (concurrent-system-empty))
-             (ch (primes-channel cos)))
-        (⊦= 0 (concurrent-channel-recv ch))
-        (⊦= 1 (concurrent-channel-recv ch))
-        (⊦= 2 (concurrent-channel-recv ch))
-        (⊦= 3 (concurrent-channel-recv ch))))
+             (ch (primes-channel cos))
+             (limit 10))
+
+        (letrec ((primes (λ (n lst)
+                          (if (>= n limit)
+                              (reverse lst)
+                              (let ((p (concurrent-channel-recv ch)))
+                                (primes (add1 n) (cons p lst)))))))
+          (⊦= '(2 3 5 7 11 13 17 19 23 29) (primes 0 '())))))
 
 )
 
