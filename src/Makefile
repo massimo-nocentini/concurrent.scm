@@ -1,6 +1,6 @@
 
 test:
-	csi test/queue.scm
+	csi -s test/concurrent.scm
 
 install:
 	chicken-install

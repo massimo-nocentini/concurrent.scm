@@ -6,3 +6,6 @@ src/concurrent.link
 src/concurrent.scm~
 src/concurrent.so
 src/concurrent.static.o
+src/chickenzmq.o
+src/chickenzmq.static.o
+src/concurrent.static.a

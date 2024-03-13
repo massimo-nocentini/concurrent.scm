@@ -2,4 +2,11 @@
 ((author "Massimo Nocentini")
  (synopsis "A port of ConcurrentML for CHICKEN scheme.")
  (license "MIT")
- (components (extension concurrent)))
+ (components 
+    (extension concurrent 
+        (component-dependencies chickenzmq)
+        (objects chickenzmq)
+        (link-options "-L" "-lzmq"))
+    (c-object chickenzmq 
+        (source "libchickenzmq.c") 
+        (csc-options "-C" "-shared -fPIC")))) #;(link-options "-L" "-lzmq")

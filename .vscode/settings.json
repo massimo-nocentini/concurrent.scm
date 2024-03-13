@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "zmq.h": "c",
+        "chicken.h": "c"
+    }
+}
