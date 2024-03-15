@@ -1,8 +1,8 @@
 
 (import scheme (chicken base) aux unittest concurrent (chicken pretty-print))
 
-(define (ℕ-channel cos ch j)
-  (concurrent-system-spawn cos
+(define (ℕ-channel ch j)
+  (concurrent-system-spawn (concurrent-channel-cos ch)
     (let C ((i j))
       (concurrent-channel-send ch i)
       (C (add1 i)))))
@@ -10,7 +10,7 @@
 (define (primes-channel cos primes)
   (concurrent-system-spawn cos
     (letchannel cos ((ℕ (concurrent-channel-sync? primes)))
-      (ℕ-channel cos ℕ 2)
+      (ℕ-channel ℕ 2)
       (let head ((nats ℕ))
         (let ((p (concurrent-channel-recv nats)))
           (concurrent-channel-send primes p)
@@ -30,8 +30,8 @@
   ((test-nat-channel-sync _)
       (let ((cos (concurrent-system-empty)))
         (letchannel cos ((ach #f) (sch #f))
-          (ℕ-channel cos ach 0)
-          (ℕ-channel cos sch 0)
+          (ℕ-channel ach 0)
+          (ℕ-channel sch 0)
           (⊦= 0 (concurrent-channel-recv ach))
           (⊦= 0 (concurrent-channel-recv sch))
           (⊦= 1 (concurrent-channel-recv ach))
