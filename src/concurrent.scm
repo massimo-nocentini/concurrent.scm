@@ -84,44 +84,47 @@
       (let ((cos (concurrent-channel-cos ch))
             (sendQ (concurrent-channel-sendQ ch))
             (recvQ (concurrent-channel-recvQ ch)))
-        (if (concurrent-channel-sync? ch)
-          (letcc k
-            (cond 
-              ((fds-queue-empty? recvQ)
-                (concurrent-channel-sendQ-enqueue! ch (cons msg k))
-                (concurrent-system-dispatch! cos))
-              (else
-                (concurrent-system-rdyQ-enqueue! cos k)
-                ((concurrent-channel-recvQ-dequeue! ch) msg))))
-          (letcc k
-            (concurrent-system-rdyQ-enqueue! cos k)
-            (cond 
-              ((fds-queue-empty? recvQ)
-                (concurrent-channel-sendQ-enqueue! ch msg)
-                (concurrent-system-dispatch! cos))
-              (else (letcar&cdr (((id recvK) (concurrent-channel-recvQ-dequeue! ch)))
-                      (recvK (cons id msg)))))))))
+        (letcc k
+          (cond 
+            ((concurrent-channel-sync? ch)
+              (cond 
+                ((fds-queue-empty? recvQ)
+                  (concurrent-channel-sendQ-enqueue! ch (cons msg k))
+                  (concurrent-system-dispatch! cos))
+                (else
+                  (concurrent-system-rdyQ-enqueue! cos k)
+                  ((concurrent-channel-recvQ-dequeue! ch) msg))))
+            (else
+              (concurrent-system-rdyQ-enqueue! cos k)
+              (cond 
+                ((fds-queue-empty? recvQ)
+                  (concurrent-channel-sendQ-enqueue! ch msg)
+                  (concurrent-system-dispatch! cos))
+                (else (letcar&cdr (((id recvK) (concurrent-channel-recvQ-dequeue! ch)))
+                        (recvK (cons id msg))))))))))
 
     (define (concurrent-channel-recv ch)
       (let ((cos (concurrent-channel-cos ch))
             (sendQ (concurrent-channel-sendQ ch))
             (recvQ (concurrent-channel-recvQ ch)))
-        (if (concurrent-channel-sync? ch)
-          (cond 
-            ((fds-queue-empty? sendQ)
-              (letcc k
-                (concurrent-channel-recvQ-enqueue! ch k)
-                (concurrent-system-dispatch! cos)))
-            (else (letcar&cdr (((msg senderK) (concurrent-channel-sendQ-dequeue! ch)))              
-                    (concurrent-system-rdyQ-enqueue! cos senderK)
-                    msg)))
-          (cond 
-            ((fds-queue-empty? sendQ)
-              (letcar&cdr (((_ msg) (letcc k
-                                      (concurrent-channel-recvQ-enqueue! ch (cons (gensym) k))
-                                      (concurrent-system-dispatch! cos))))
-                msg))
-            (else (concurrent-channel-sendQ-dequeue! ch))))))
+        (cond 
+          ((concurrent-channel-sync? ch)
+            (letcc k
+              (cond 
+                ((fds-queue-empty? sendQ)
+                  (concurrent-channel-recvQ-enqueue! ch k)
+                  (concurrent-system-dispatch! cos))
+                (else (letcar&cdr (((msg senderK) (concurrent-channel-sendQ-dequeue! ch)))              
+                        (concurrent-system-rdyQ-enqueue! cos senderK)
+                        msg)))))
+          (else
+            (cond 
+              ((fds-queue-empty? sendQ)
+                (letcar&cdr (((_ msg) (letcc k
+                                        (concurrent-channel-recvQ-enqueue! ch (cons (gensym) k))
+                                        (concurrent-system-dispatch! cos))))
+                  msg))
+              (else (concurrent-channel-sendQ-dequeue! ch)))))))
 
     (define-syntax letchannel
       (syntax-rules ()

@@ -48,13 +48,13 @@
           (primes-channel cos ach)
           (primes-channel cos sch)
           (letrec ((primes (λ (ch n lst)
-                            (if (>= n limit)
+                            (if (> n limit)
                                 (reverse lst)
                                 (let ((p (concurrent-channel-recv ch)))
-                                  #;(print n " " p)
+                                  #;(print n "nth " p)
                                   (primes ch (add1 n) (cons p lst)))))))
-            (⊦= '(2 3 5 7 11 13 17 19 23 29) (primes ach 0 '()))
-            (⊦= '(2 3 5 7 11 13 17 19 23 29) (primes sch 0 '()))))))
+            (⊦= '(2 3 5 7 11 13 17 19 23 29) (primes ach 1 '()))
+            (⊦= '(2 3 5 7 11 13 17 19 23 29) (primes sch 1 '()))))))
 
   
 
