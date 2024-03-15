@@ -132,12 +132,11 @@
            body ...))))
 
     (define (concurrent-channel-filter chin chout p?)
-      (let1 (cos (concurrent-channel-cos chin))      
-        (concurrent-system-spawn cos
-          (let loop () 
-            (let1 (msg (concurrent-channel-recv chin))
-              (when (p? msg) (concurrent-channel-send chout msg))
-              (loop))))))
+      (concurrent-system-spawn (concurrent-channel-cos chin)
+        (let loop () 
+          (let1 (msg (concurrent-channel-recv chin))
+            (when (p? msg) (concurrent-channel-send chout msg))
+            (loop)))))
 
     (define ((concurrent-event-wrap-event evt f) k)
       (k (f (callcc evt))))
