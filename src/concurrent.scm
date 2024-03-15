@@ -138,5 +138,12 @@
             (let1 (msg (concurrent-channel-recv chin))
               (when (p? msg) (concurrent-channel-send chout msg))
               (loop))))))
+
+    (define ((concurrent-event-wrap-event evt f) k)
+      (k (f (callcc evt))))
     
+    (define-syntax λ-wrap-event
+      (syntax-rules ()
+        ((_ evt args body ...) (concurrent-event-wrap-event evt (λ args body ...)))))
+
 )
